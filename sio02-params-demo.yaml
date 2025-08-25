@@ -1,0 +1,22 @@
+device-id: TRACELET-DEMO
+loc-srv: 192.168.0.121:11001
+dr: on
+imu2vrp_x: -171  # IMU to Vehicle Reference Point (VRP) offset in cm
+imu2vrp_y: 10   # IMU to Vehicle Reference Point (VRP) offset in cm
+imu2vrp_z: -123  # IMU to Vehicle Reference Point (VRP) offset in cm
+uwb_z: 143      # UWB Z offset in cm
+dynmodel: automotive
+tacho_k: 2500
+fuse-rate: 1
+gnss-rate: 1
+imu_mntalg: 0:0:0
+ubx_wt_dir: 1:0:0:0
+fuse-origin: 48.1748314:11.5287476:0.8900383  # Origin configuration from Easyplan
+uwb_motion_check: 0
+wifi-low-rssi: -100
+ntrip-caster: rtk2go.com:2101:ING-IEZ
+ntrip-credentials: info@ci4rail.com:none
+uwb_server: off
+uwb_fw_update: on
+uwb_threshold: 5
+uwb_radio: 9

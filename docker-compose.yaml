@@ -1,0 +1,47 @@
+
+services:
+  benthos:
+    image: ci4rail/redpanda-connect-kyt:v1.1.0
+    command:
+      - "-c"
+      - "/config/benthos.yaml"
+    restart: always
+    ports:
+      - 11001:11001/udp
+      - 4195:4195
+    volumes:
+        - ./benthos-io4edge:/config:ro
+
+  prometheus:
+    image: ci4rail/prometheus-localhosts:v2
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=120d'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-admin-api'
+      - '--web.enable-remote-write-receiver'
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - demo_prom_data:/prometheus
+      - /var/run/dbus:/var/run/dbus
+      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
+
+  grafana:
+    image: grafana/grafana-enterprise:11.3.1
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=lyve-demo
+      - GF_SECURITY_ADMIN_PASSWORD=lyve123
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/datasources
+      - demo_grafana_data:/var/lib/grafana
+
+
+volumes:
+  demo_grafana_data:
+  demo_prom_data:

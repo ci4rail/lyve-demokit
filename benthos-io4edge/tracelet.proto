@@ -1,0 +1,267 @@
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: (c) 2024 Ci4Rail GmbH
+
+// Protobuf definitiions for Ci4Rail Tracelet, e.g. SIO02 or SIO03.
+// It defines the messages exchanged between the Tracelet and the localization
+// system. The messages are transported over UDP, with handshaking
+// 
+// The tracelet is the UDP client and the localization system is the UDP server.
+
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package tracelet;
+option go_package = "./tracelet";
+
+// message sent from tracelet to server
+
+message TraceletToServer {
+
+  // Sub-message sent periodically sent by the tracelet
+  message Location {
+
+    message Gnss {
+      // GNSS location valid. If false, the other fields are not valid
+      bool valid = 1;
+
+      // WGS84 coordinates
+      // latitude in [deg]
+      double latitude = 2;
+
+      // longitude in [deg]
+      double longitude = 3;
+
+      // altitude in [m]
+      double altitude = 4;
+
+      // horizontal accuracy in [m]
+      double eph = 5;
+
+      // vertical accuracy in [m]
+      double epv = 6;
+
+      // type of fix 
+      // 0 = invalid, 1 = GPS fix, 2 = DGPS fix, 3 = PPS fix, 4 = Real Time Kinematic, 
+      // 5 = Float RTK, 6 = estimated, 7 = Manual input mode, 8 = Simulation mode
+      int32 fix_type = 7;
+
+      // heading of motion in [deg], relative to true north
+      double head_motion = 8;
+
+      // heading of vehicle in [deg], relative to true north
+      double head_vehicle = 9;
+
+      // heading valid (bit 0=motion valid, 1=vehicle valid))
+      uint32 head_valid = 10;
+
+      // speed in [m/s]
+      double ground_speed = 11;
+    }
+
+    message Uwb {
+      // UWB location valid. If false, the other fields are not valid
+      bool valid = 1;
+
+      // location of tracelet in space
+      // Units: [m], can be negative. Resolution 0.1m
+      double x = 2;
+      double y = 3;
+      double z = 4;
+
+      // Site ID
+      // a 16 bit unsigned value
+      uint32 site_id = 5;
+
+      // Location signature
+      // can be used to validate the received location
+      fixed64 location_signature = 6;
+
+      // horizontal accuracy in [m]
+      double eph = 7;
+
+      // type of fix 
+      // 0 = invalid, 1 = UWB/IMU, 2 - IMU only
+      int32 fix_type = 8;
+
+      // heading of motion in [deg]
+      // relative to site coordinate system, counterclockwise, 0 in direction of pos. x axis
+      double head_motion = 9;
+
+      // heading of vehicle in [deg] - future extension
+      double head_vehicle = 10;
+
+      // heading valid (bit 0=motion valid, 1=vehicle valid))
+      uint32 head_valid = 11;
+
+      // speed in [m/s]
+      double ground_speed = 12;
+    }
+
+    message Fused {
+      // Fused location valid. If false, the other fields are not valid
+      bool valid = 1;
+
+      // WGS84 coordinates
+      // latitude in [deg]
+      double latitude = 2;
+
+      // longitude in [deg]
+      double longitude = 3;
+
+      // altitude in [m] - future extension
+      double altitude = 4; 
+
+      // horizontal accuracy in [m]
+      double eph = 5;
+
+      // heading of motion in [deg] - future extension
+      double head_motion = 6;  
+
+      // heading of vehicle in [deg] - future extension
+      double head_vehicle = 7;
+
+      // heading valid (bit 0=motion valid, 1=vehicle valid)) - future extension
+      uint32 head_valid = 8;
+
+      // speed in [m/s] - future extension
+      double ground_speed = 9;
+    }
+
+    // Acceleration data - all values in (m/s^2)
+    message Acceleration {
+        double x_max = 1; // Maximum acceleration in x direction in last period 
+        double y_max = 2;
+        double z_max = 3;
+        double x_min = 4; // Minimum acceleration in x direction in last period
+        double y_min = 5;
+        double z_min = 6;
+        double x_avg = 7; // Average acceleration in x direction in last period
+        double y_avg = 8;
+        double z_avg = 9;
+    }
+
+
+    enum Direction {
+      // Invalid direction
+      NO_DIRECTION = 0;
+
+      // CAB A
+      CAB_A_DIRECTION = 1;
+
+      // CAB B
+      CAB_B_DIRECTION = 2;
+    }
+
+    // Data from GNSS subsystem
+    Gnss gnss = 1;
+
+    // Data from UWB subsystem
+    Uwb uwb = 2;
+
+    // Fused location
+    Fused fused = 7;
+
+    // Driving direction of the vehicle
+    Direction direction = 3;
+
+    // Vehicle Speed in [m/s]
+    double speed = 4;
+
+    // Vehicle Mileage in [km]
+    int32 mileage = 5;
+
+    // Current Tracelet Temperature in [°C]
+    double temperature = 6;
+
+    // Acceleration data
+    Acceleration acceleration = 8;
+
+  } // Location
+
+  // Currently not used, always 0
+  int32 id = 1;
+
+  // timestamp when the message was sent by the tracelet
+  // If the Tracelet has no valid time, receive_ts is set to 1970-Jan-1 00:00
+  // UTC
+  google.protobuf.Timestamp delivery_ts = 2;
+
+  // tracelet ID as provisioned in tracelet. Could be a vehicle ID
+  string tracelet_id = 3;
+
+  // status of the tracelet ignition signal
+  bool ignition = 4;
+
+  oneof type {
+    Location location = 5;     // periodically sent by the tracelet
+    // possible future messages
+  }
+
+  string firmware_version = 7; // Firmware version of the tracelet
+
+  TraceletMetrics metrics = 10;
+}
+
+// Tracelet metrics. May be sent together with the location message
+// Metric families are written in the form of metric___label___labelvalue
+message TraceletMetrics {
+  int64 health___type___uwb_comm = 1; 
+  int64 health___type___uwb_firmware = 2;
+  int64 health___type___uwb_config = 3;
+  int64 health___type___gnss_comm = 4;
+  int64 health___type___ubx_firmware = 5;
+  int64 health___type___ubx_config = 6;
+  int64 health___type___actors_startup = 7;
+
+  int64 sntp_updates = 8;                                 // Number of SNTP time updates
+  int64 free_heap_bytes = 9;                              // Free heap (bytes)
+  double system_time_seconds = 10;                        // System time in seconds since 1970 UTC
+
+  double wifi_rssi_dbm = 11;                              // Wifi RSSI (dBm), NAN if not connected
+  int64 wifi_ap = 12;                                     // Last two bytes of connected AP MAC address as a number
+
+  int64 gnss_num_sats___system___gps = 13;                // number of satellites in view (GPS)
+  int64 gnss_num_sats___system___glonass = 14;            // number of satellites in view (GLONASS)
+  int64 gnss_num_sats___system___beidou = 15;             // number of satellites in view (Beidou)
+  int64 gnss_num_sats___system___galileo = 16;            // number of satellites in view (Galileo)
+  int64 gnss_num_sats___system___qzss = 17;               // number of satellites in view (QZSS)
+  int64 gnss_uart_errors___type___parse_gsv = 18;         // Number of GNSS UART errors
+  int64 gnss_uart_errors___type___sentence_invalid = 19;           
+  int64 gnss_uart_errors___type___sentence_unknown = 20;      
+  int64 gnss_uart_errors___type___hw_fifo = 21;
+  int64 gnss_uart_errors___type___buf_full = 22;
+  int64 gnss_uart_errors___type___char = 23;
+  double gnss_protection_level___info___tmir = 24;
+  double gnss_protection_level___info___pos1 = 25;
+  double gnss_protection_level___info___pos2 = 26;
+  double gnss_protection_level___info___pos3 = 27;
+  double gnss_protection_level___info___pos_valid = 28;
+  double gnss_protection_level___info___pos_frame = 29;
+
+  int64 gnss_num_sv = 30;                                // Number of satellites used in fix
+  int64 gnss_pga___block___rf1 = 31;                     // gain of programmable amplifier
+  int64 gnss_pga___block___rf2 = 32;
+  int64 ubx_sensor_fusion_status_enum = 33;               // UBX Sensor fusion status (0-3)
+  int64 ubx_ref_station_id = 34;                          // UBX GNSS reference station
+  int64 ntrip_is_connected = 35;                          // Has Connection to NTRIP Caster
+  int64 ntrip_transfer_bytes___direction___send = 36;     // Bytes sent to NTRIP Caster
+  int64 ntrip_transfer_bytes___direction___recv = 37;     // Bytes received from NTRIP Caster
+
+  int64 uwb_status_role_enum = 38;                        // UWB Role from Status Report (0-4) 3=TAG
+  int64 uwb_status_state_enum = 39;                       // UWB State from Status Report(0-4)
+  int64 uwb_status_motion_state_enum = 40;                // UWB Motion Sensor State from Status Report (0..2), 1=MOVE
+
+  int64 lsi_is_connected = 41;                            // Localization Server Interface gets ACKs from server
+  int64 lsi_acks_missed = 42;                             // Localization Server Interface missed ACKs from server
+
+  int64 ubx_boot_type_enum = 43;                          // UBX Boot type (0-10)
+  int64 ubx_runtime = 44;                                 // UBX Runtime in seconds
+
+  int64 ubx_sensor_fusion_detail___type___wt_init = 45;   // WT Initialization status (0..2)
+  int64 ubx_sensor_fusion_detail___type___mnt_alg = 46;   // Automatic IMU MntAlg status (0..3)
+  int64 ubx_sensor_fusion_detail___type___ins_init = 47;  // INS Initialization status (0..2)
+  int64 ubx_sensor_fusion_detail___type___imu_init = 48;  // INS State (0..2)
+
+  int64 sensor_fusion_state = 49;                         // Sensor Fusion State (0=NONE, 1=UWB, 2=GNSS, 3=UWB-to-GNSS)
+}

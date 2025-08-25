@@ -1,0 +1,222 @@
+logger:
+  level: INFO
+  add_timestamp: true
+
+input:
+  label: "tracelet_udp"
+  tracelet_udp:
+    address: 0.0.0.0:11001
+
+pipeline:
+  processors:
+    - protobuf:
+        operator: to_json
+        message: tracelet.TraceletToServer
+        import_paths: [/config]
+        use_proto_names: true
+    #!bloblang
+    - bloblang: |
+        meta vehicle = this.tracelet_id
+
+        root = this
+        # ensure that all fields are there (because protobuf does not report field with their default values)
+        root.location.gnss.valid = this.location.gnss.valid | false
+        root.location.gnss.latitude = this.location.gnss.latitude | 0.0
+        root.location.gnss.longitude = this.location.gnss.longitude | 0.0
+        root.location.gnss.altitude = this.location.gnss.altitude | 0.0
+        root.location.gnss.eph = this.location.gnss.eph | 0.0
+        root.location.gnss.epv = this.location.gnss.epv | 0.0
+        root.location.gnss.fix_type = this.location.gnss.fix_type | 0
+        root.location.gnss.head_motion = this.location.gnss.head_motion | 0
+        root.location.gnss.head_vehicle = this.location.gnss.head_vehicle | 0
+        root.location.gnss.head_valid = this.location.gnss.head_valid | 0
+        root.location.gnss.ground_speed = this.location.gnss.ground_speed | 0.0
+
+        root.location.uwb.valid = this.location.uwb.valid | false
+        root.location.uwb.x = this.location.uwb.x | 0.0
+        root.location.uwb.y = this.location.uwb.y | 0.0
+        root.location.uwb.z = this.location.uwb.z | 0.0
+        root.location.uwb.site_id = this.location.uwb.site_id | 0
+        root.location.uwb.location_signature = this.location.uwb.location_signature | 0
+        root.location.uwb.eph = this.location.uwb.eph | 0.0
+        root.location.uwb.fix_type = this.location.uwb.fix_type | 0
+        root.location.uwb.head_motion = this.location.uwb.head_motion | 0
+        root.location.uwb.head_vehicle = this.location.uwb.head_vehicle | 0
+        root.location.uwb.head_valid = this.location.uwb.head_valid | 0
+        root.location.uwb.ground_speed = this.location.uwb.ground_speed | 0.0
+
+        root.location.fused.valid = this.location.fused.valid | false
+        root.location.fused.latitude = this.location.fused.latitude | 0.0
+        root.location.fused.longitude = this.location.fused.longitude | 0.0
+        root.location.fused.altitude = this.location.fused.altitude | 0.0
+        root.location.fused.eph = this.location.fused.eph | 0.0
+        root.location.fused.head_motion = this.location.fused.head_motion | 0
+        root.location.fused.head_vehicle = this.location.fused.head_vehicle | 0
+        root.location.fused.head_valid = this.location.fused.head_valid | 0
+        root.location.fused.ground_speed = this.location.fused.ground_speed | 0.0
+
+        root.location.direction = this.location.direction | 0
+        root.location.speed = this.location.speed | 0.0
+        root.location.mileage = this.location.mileage | 0
+        root.location.temperature = this.location.temperature | 0.0
+        root.location.acceleration.x_max = this.location.acceleration.x_max | 0.0
+        root.location.acceleration.y_max = this.location.acceleration.y_max | 0.0
+        root.location.acceleration.z_max = this.location.acceleration.z_max | 0.0
+        root.location.acceleration.x_min = this.location.acceleration.x_min | 0.0
+        root.location.acceleration.y_min = this.location.acceleration.y_min | 0.0
+        root.location.acceleration.z_min = this.location.acceleration.z_min | 0.0
+        root.location.acceleration.x_avg = this.location.acceleration.x_avg | 0.0
+        root.location.acceleration.y_avg = this.location.acceleration.y_avg | 0.0
+        root.location.acceleration.z_avg = this.location.acceleration.z_avg | 0.0
+        root.ignition = this.ignition | false
+
+        if this.metrics != null {
+          let m = this.metrics
+          let g = this.location.gnss
+          let u = this.location.uwb
+
+          let fw_metric_key = "fw___version___" + this.firmware_version
+          let tmp = {
+            $fw_metric_key: 0
+          }
+
+          root.metrics = $m.merge($tmp)
+          root.metrics.health___type___uwb_comm = $m.health___type___uwb_comm | 0
+          root.metrics.health___type___uwb_firmware = $m.health___type___uwb_firmware | 0
+          root.metrics.health___type___uwb_config = $m.health___type___uwb_config | 0
+          root.metrics.health___type___gnss_comm = $m.health___type___gnss_comm | 0
+          root.metrics.health___type___ubx_firmware = $m.health___type___ubx_firmware | 0
+          root.metrics.health___type___ubx_config = $m.health___type___ubx_config | 0
+          root.metrics.health___type___actors_startup = $m.health___type___actors_startup | 0
+          root.metrics.sntp_updates = $m.sntp_updates | 0
+          root.metrics.free_heap_bytes = $m.free_heap_bytes | 0
+          root.metrics.system_time_seconds = $m.system_time_seconds | 0
+          root.metrics.wifi_rssi_dbm = $m.wifi_rssi_dbm | 0
+          root.metrics.wifi_ap = $m.wifi_ap | 0
+          root.metrics.gnss_fix_type_enum = $g.fix_type | 0
+          root.metrics.gnss_eph_meters = $g.eph | 0
+          root.metrics.gnss_lat_degrees = $g.latitude | 0
+          root.metrics.gnss_lon_degrees = $g.longitude | 0
+          root.metrics.gnss_ground_speed = $g.ground_speed | 0
+          root.metrics.gnss_heading___info___head_veh_valid = match $g.head_valid{
+            2 => 1
+            3 => 1
+            _ => 0
+          }
+          root.metrics.gnss_heading___info___head_veh = $g.head_vehicle | 0
+          root.metrics.gnss_heading___info___head_mot = $g.head_motion | 0
+          root.metrics.gnss_num_sats___system___gps = $m.gnss_num_sats___system___gps | 0
+          root.metrics.gnss_num_sats___system___glonass = $m.gnss_num_sats___system___glonass | 0
+          root.metrics.gnss_num_sats___system___beidou = $m.gnss_num_sats___system___beidou | 0
+          root.metrics.gnss_num_sats___system___galileo = $m.gnss_num_sats___system___galileo | 0
+          root.metrics.gnss_num_sats___system___qzss = $m.gnss_num_sats___system___qzss | 0
+          root.metrics.gnss_uart_errors___type___parse_gsv = $m.gnss_uart_errors___type___parse_gsv | 0
+          root.metrics.gnss_uart_errors___type___sentence_invalid = $m.gnss_uart_errors___type___sentence_invalid | 0
+          root.metrics.gnss_uart_errors___type___sentence_unknown = $m.gnss_uart_errors___type___sentence_unknown | 0
+          root.metrics.gnss_uart_errors___type___hw_fifo = $m.gnss_uart_errors___type___hw_fifo | 0
+          root.metrics.gnss_uart_errors___type___buf_full = $m.gnss_uart_errors___type___buf_full | 0
+          root.metrics.gnss_uart_errors___type___char = $m.gnss_uart_errors___type___char | 0
+          root.metrics.gnss_protection_level___info___tmir = $m.gnss_protection_level___info___tmir | 0
+          root.metrics.gnss_protection_level___info___pos_valid = $m.gnss_protection_level___info___pos_valid | 0
+          root.metrics.gnss_num_sv = $m.gnss_num_sv | 0
+          root.metrics.ubx_sensor_fusion_status_enum = $m.ubx_sensor_fusion_status_enum | 0
+          root.metrics.ubx_ref_station_id = $m.ubx_ref_station_id | 0
+          root.metrics.ubx_temperature_degrees = this.location.temperature | 0
+          root.metrics.ntrip_is_connected = $m.ntrip_is_connected | 0
+          root.metrics.ntrip_transfer_bytes___direction___send = $m.ntrip_transfer_bytes___direction___send | 0
+          root.metrics.ntrip_transfer_bytes___direction___recv = $m.ntrip_transfer_bytes___direction___recv | 0
+          root.metrics.uwb_is_valid = match $u.valid{
+            true => 1
+            _ => 0
+          }
+          root.metrics.uwb_x_meters = $u.x | 0
+          root.metrics.uwb_y_meters = $u.y | 0
+          root.metrics.uwb_z_meters = $u.z | 0
+          root.metrics.uwb_eph_meters = $u.eph | 0
+          root.metrics.uwb_fix_type_enum = $u.fix_type | 0
+          root.metrics.uwb_head_motion = $u.head_motion | 0
+          root.metrics.uwb_head_vehicle = $u.head_vehicle | 0
+          root.metrics.uwb_head_valid = $u.head_valid | 0
+          root.metrics.uwb_speed_meters_per_second = $u.ground_speed | 0
+          root.metrics.uwb_status_motion_state_enum = $m.uwb_status_motion_state_enum | 0
+          root.metrics.speed_meters_per_second = this.location.speed | 0
+          root.metrics.mileage_meters = this.location.mileage * 1000 | 0
+          root.metrics.lsi_is_connected = $m.lsi_is_connected | 0
+          root.metrics.lsi_acks_missed = $m.lsi_acks_missed | 0
+          root.metrics.ubx_boot_type_enum = $m.ubx_boot_type_enum | 0
+          root.metrics.ubx_runtime = $m.ubx_runtime | 0
+          root.metrics.ubx_sensor_fusion_detail___type___wt_init = $m.ubx_sensor_fusion_detail___type___wt_init | 0
+          root.metrics.ubx_sensor_fusion_detail___type___mnt_alg = $m.ubx_sensor_fusion_detail___type___mnt_alg | 0
+          root.metrics.ubx_sensor_fusion_detail___type___ins_init  = $m.ubx_sensor_fusion_detail___type___ins_init  | 0
+          root.metrics.ubx_sensor_fusion_detail___type___imu_init  = $m.ubx_sensor_fusion_detail___type___imu_init  | 0
+          root.metrics.sensor_fusion_state = $m.sensor_fusion_state | 0
+          root.metrics.ignition_state = match this.ignition{
+            true => 1
+            _ => 0
+          }
+        }
+
+    - log:
+        level: INFO
+        message: "decoded this: ${! this }"
+
+output:
+  broker:
+    pattern: fan_out
+    outputs:
+      # Forward data to Easyplan
+      - drop_on:
+          error: true
+          back_pressure: "10s"
+          output:
+            label: "easyplan"
+            socket_client_io4edge:
+              address: host.docker.internal:11002
+            processors:
+              #!bloblang
+              - bloblang: |
+                  root = this.without("metrics")
+              - protobuf:
+                  operator: from_json
+                  message: tracelet.TraceletToServer
+                  import_paths: [/config]
+
+      - drop_on:
+          error: true
+          output:
+            label: "metrics"
+            prometheus_output:
+              url: "http://prometheus:9090/api/v1/write"
+              username: ""
+              password: ""
+              # batching:
+              #   count: 200
+              #   period: 10s
+            processors:
+              #!bloblang
+              - bloblang: |
+                  if this.metrics != null {
+                    let m = this.metrics
+                    root = {}
+                    #root.ts = this.delivery_ts.format_timestamp_unix_milli()
+                    root.ts = now().format_timestamp_unix_milli()
+                    root.metrics = this.metrics
+                    root.labels = {}
+                    root.labels.origin_prometheus = "bernmobil"
+                    root.labels.device = this.tracelet_id
+                    root.labels.job = "tracelet"
+                  } else {
+                    root = deleted()
+                  }
+                  # let m = this.metrics
+                  # root = {}
+                  # root.ts = this.delivery_ts.format_timestamp_unix_milli()
+                  # root.metrics = this.metrics
+                  # root.labels = {}
+                  # root.labels.origin_prometheus = "bernmobil"
+                  # root.labels.device = this.tracelet_id
+                  # root.labels.job = "tracelet"
+              - log:
+                  level: DEBUG
+                  message: "prom input: ${! this }"
+                  
