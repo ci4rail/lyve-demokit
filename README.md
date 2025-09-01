@@ -16,5 +16,3 @@ $ docker compose up -d
    - **Username:** `lyve-demo`  
    - **Password:** `lyve123`  
 3. Go to **Dashboards** and select the one you want to view.  
-
-> **Note:** If this is the first time the Grafana container is started (or its volume has been deleted), click on **New** and import `dashboard-single-tracelet.json`.

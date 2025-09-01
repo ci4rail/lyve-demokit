@@ -13,7 +13,7 @@ services:
         - ./benthos-io4edge:/config:ro
 
   prometheus:
-    image: ci4rail/prometheus-localhosts:v2
+    image: prom/prometheus:v2.53.5
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.retention.time=120d'
@@ -26,8 +26,6 @@ services:
     volumes:
       - ./prometheus:/etc/prometheus
       - demo_prom_data:/prometheus
-      - /var/run/dbus:/var/run/dbus
-      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
 
   grafana:
     image: grafana/grafana-enterprise:11.3.1
@@ -38,7 +36,8 @@ services:
       - GF_SECURITY_ADMIN_USER=lyve-demo
       - GF_SECURITY_ADMIN_PASSWORD=lyve123
     volumes:
-      - ./grafana:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/dashboards
       - demo_grafana_data:/var/lib/grafana
 
 
