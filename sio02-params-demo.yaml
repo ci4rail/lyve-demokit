@@ -12,7 +12,7 @@ fuse-rate: 1
 gnss-rate: 1
 imu_mntalg: 0:0:0 # Adapt this to your vehicle!
 ubx_wt_dir: 1:0:0:0
-fuse-origin: 48.1748314:11.5287476:0.8900383 # Adapt this to your site! Origin configuration from Easyplan
+fuse-origin: 49.43082145080619:11.070912941592663:75.59394239191397 # Adapt this to your site! Origin configuration from Easyplan
 uwb_motion_check: 0
 wifi-low-rssi: -100
 ntrip-caster: rtk2go.com:2101:ING-IEZ # adapt this to a NTRIP Caster close to your location
